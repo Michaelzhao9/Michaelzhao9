@@ -20,13 +20,13 @@ jobs:
       - name: Render dashboard.svg
         env:
           PROFILE_PAT: ${{ secrets.PROFILE_PAT }}
-        run: python3 scripts/stats.py out/dashboard.svg
+        run: python3 scripts/stats.py out
       - name: Publish to output branch
-        if: hashFiles('out/dashboard.svg') != ''
+        if: hashFiles('out/*.svg') != ''
         run: |
           cd out
           git init -q -b output
-          git add dashboard.svg
+          git add .
           git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
             commit -qm "telemetry $(date -u +%F)"
           git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" output

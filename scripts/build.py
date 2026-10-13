@@ -11,13 +11,29 @@ from pathlib import Path
 
 OUT = Path(__file__).resolve().parent.parent / "assets"
 
-BG = "#060608"
-INK = "#0C0C10"
-GOLD = "#E8C766"
-GOLD_HI = "#FFF1C1"
-GOLD_LO = "#9A7428"
-CYAN = "#3DF5FF"
-TITLE = "#F2D27A"  # solid: WebKit renders gradient fills on textLength-stretched text jagged
+# Panels are transparent and borderless so they sit on GitHub's own canvas.
+# BG is the canvas colour (used where a shape must punch through to the page).
+THEMES = {
+    "dark": dict(BG="#0d1117", INK="#151b23", GOLD="#E8C766", GOLD_HI="#FFF1C1", GOLD_LO="#9A7428",
+                 G=("#FFF1C1", "#E8C766", "#C79A3A", "#9A7428"), CYAN="#3DF5FF",
+                 TITLE="#F2D27A",  # solid: WebKit renders gradient fills on textLength-stretched text jagged
+                 FG="#e6edf3", TEXT="#b1bac4", MUTED="#8b949e", TRACK="#262c36", SUN=".28", HALO="1",
+                 RAMP=("#FFF1C1", "#E8C766", "#C79A3A", "#9A7428", "#6B5020", "#3A3428")),
+    "light": dict(BG="#ffffff", INK="#f6f8fa", GOLD="#B8891F", GOLD_HI="#7A5408", GOLD_LO="#D9B45A",
+                  G=("#E0AE45", "#C08A1E", "#9C6C10", "#6E4A06"), CYAN="#0A8FA3",
+                  TITLE="#8F6206", FG="#1f2328", TEXT="#3d444d", MUTED="#59636e", TRACK="#eaeef2",
+                  SUN=".16", HALO=".3",
+                  RAMP=("#6E4A06", "#9C6C10", "#C08A1E", "#E0AE45", "#EDD08A", "#d1d9e0")),
+}
+
+
+def use(theme, *namespaces):
+    """Switch the palette globals (and any extra module namespaces) to a theme."""
+    for ns in (globals(), *namespaces):
+        ns.update(THEMES[theme])
+
+
+use("dark")
 MONO = "'SF Mono','JetBrains Mono',Menlo,Consolas,'Liberation Mono','DejaVu Sans Mono'"
 CJK = "'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC',sans-serif"
 FONT = f"{MONO},{CJK}"
@@ -46,49 +62,31 @@ def svg(w, h, body, style, defs=""):
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}" '
         f'font-family="{FONT}">\n'
         f"<style>{style}</style>\n"
-        f'<defs>{COMMON_DEFS}{defs}'
-        f'<clipPath id="frame"><rect width="{w}" height="{h}" rx="18"/></clipPath></defs>\n'
-        f'<g clip-path="url(#frame)">\n<rect width="{w}" height="{h}" fill="{BG}"/>\n{body}\n</g>\n'
-        f'<rect x=".5" y=".5" width="{w - 1}" height="{h - 1}" rx="18" fill="none" stroke="{GOLD}" stroke-opacity=".18"/>\n'
-        "</svg>\n"
+        f"<defs>{common_defs()}{defs}</defs>\n{body}\n</svg>\n"
     )
 
 
-COMMON_DEFS = f"""
+def common_defs():
+    return f"""
 <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
-  <stop offset="0" stop-color="{GOLD_HI}"/><stop offset=".45" stop-color="{GOLD}"/>
-  <stop offset=".75" stop-color="#C79A3A"/><stop offset="1" stop-color="{GOLD_LO}"/>
+  <stop offset="0" stop-color="{G[0]}"/><stop offset=".45" stop-color="{G[1]}"/>
+  <stop offset=".75" stop-color="{G[2]}"/><stop offset="1" stop-color="{G[3]}"/>
 </linearGradient>
-<linearGradient id="goldH" x1="0" y1="0" x2="1" y2="0">
-  <stop offset="0" stop-color="{GOLD_LO}"/><stop offset=".5" stop-color="{GOLD_HI}"/><stop offset="1" stop-color="{GOLD_LO}"/>
+<linearGradient id="goldH" x1="0" y1="0" x2="1200" y2="0" gradientUnits="userSpaceOnUse">  <!-- userSpace: straight lines have a zero-height bbox -->
+  <stop offset="0" stop-color="{GOLD}" stop-opacity="0"/><stop offset=".5" stop-color="{GOLD}"/>
+  <stop offset="1" stop-color="{GOLD}" stop-opacity="0"/>
 </linearGradient>
-<pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse">
-  <rect width="4" height="1" fill="#fff" fill-opacity=".035"/>
-</pattern>
 <filter id="glow" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
 <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
 """
 
 SCAN_CSS = """
-@keyframes sweep{from{transform:translateY(-160px)}to{transform:translateY(var(--h))}}
-.sweep{animation:sweep 7s linear infinite}
 @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
 .blink{animation:blink 1.1s steps(1) infinite}
 @keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
 """
 
 
-def overlay(w, h):
-    """Scanlines + slow light sweep, laid over every panel."""
-    return (
-        f'<rect width="{w}" height="{h}" fill="url(#scan)"/>'
-        f'<rect class="sweep" style="--h:{h}px" width="{w}" height="160" fill="url(#sweepG)"/>'
-    )
-
-
-SWEEP_DEF = """<linearGradient id="sweepG" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#FFE9A8" stop-opacity=".05"/>
-<stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>"""
 
 
 def corners(x, y, w, h, n=26, inset=0, op=".7"):
@@ -103,7 +101,7 @@ def section_label(x, y, num, en, zh, w):
         f'<rect x="{x}" y="{y - 11}" width="6" height="14" fill="{GOLD}"/>'
         + text(x + 16, y, f"// {num}", 13, GOLD, extra='opacity=".55" letter-spacing="2"')
         + text(x + 80, y, en, 15, GOLD, weight=700, fit=True)
-        + text(x + 92 + tw(en, 15), y, zh, 14, "#8A8A8A")
+        + text(x + 92 + tw(en, 15), y, zh, 14, MUTED)
         + f'<line x1="{x + 108 + tw(en, 15) + tw(zh, 14)}" y1="{y - 5}" x2="{x + w}" y2="{y - 5}" '
           f'stroke="{GOLD}" stroke-opacity=".22"/>'
         + f'<rect x="{x + w - 40}" y="{y - 7}" width="40" height="3" fill="{GOLD}" opacity=".6"/>'
@@ -187,19 +185,25 @@ def hero():
 """
 
     # --- backdrop
-    defs = SWEEP_DEF + f"""
-<radialGradient id="sun" cx="600" cy="{HZ}" r="520" gradientUnits="userSpaceOnUse">
-  <stop offset="0" stop-color="{GOLD}" stop-opacity=".28"/><stop offset=".35" stop-color="#8A6418" stop-opacity=".1"/>
+    defs = f"""
+<radialGradient id="sun" cx="600" cy="{HZ}" r="520" gradientUnits="userSpaceOnUse"
+  gradientTransform="translate(600 {HZ}) scale(1 .3) translate(-600 -{HZ})">
+  <stop offset="0" stop-color="{GOLD}" stop-opacity="{SUN}"/><stop offset=".35" stop-color="{GOLD}" stop-opacity=".08"/>
   <stop offset="1" stop-color="{GOLD}" stop-opacity="0"/></radialGradient>
-<radialGradient id="vig" cx=".5" cy=".45" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/>
-  <stop offset="1" stop-color="#000" stop-opacity=".85"/></radialGradient>
 <linearGradient id="floorFade" x1="0" y1="{HZ}" x2="0" y2="{H}" gradientUnits="userSpaceOnUse">
   <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".15" stop-color="#fff" stop-opacity=".35"/>
-  <stop offset="1" stop-color="#fff" stop-opacity="1"/></linearGradient>
+  <stop offset=".7" stop-color="#fff" stop-opacity="1"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="sideFade" x1="0" y1="0" x2="1" y2="0">
+  <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".2" stop-color="#fff"/>
+  <stop offset=".8" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
 <mask id="floorM"><rect y="{HZ}" width="{W}" height="{H - HZ}" fill="url(#floorFade)"/></mask>
+<mask id="sideM"><rect width="{W}" height="{H}" fill="url(#sideFade)"/></mask>
 <linearGradient id="shineG" x1="0" y1="0" x2="1" y2="0">
   <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".95"/>
   <stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="nameG" x1="0" y1="{ny - sw / 2:.1f}" x2="0" y2="{ny + 10 * s + sw / 2:.1f}" gradientUnits="userSpaceOnUse">
+  <stop offset="0" stop-color="{G[0]}"/><stop offset=".45" stop-color="{G[1]}"/>
+  <stop offset=".75" stop-color="{G[2]}"/><stop offset="1" stop-color="{G[3]}"/></linearGradient>
 <mask id="nameM">{strokes("#fff", sw, cls=False)}</mask>
 <clipPath id="band1"><rect x="0" y="{ny + 12}" width="{W}" height="18"/><rect x="0" y="{ny + 58}" width="{W}" height="9"/></clipPath>
 <clipPath id="band2"><rect x="0" y="{ny + 34}" width="{W}" height="14"/><rect x="0" y="{ny + 72}" width="{W}" height="7"/></clipPath>
@@ -235,14 +239,14 @@ def hero():
         "</g>")
 
     # floor grid
-    fl = [f'<g mask="url(#floorM)" stroke="{GOLD}" fill="none">']
+    fl = [f'<g mask="url(#sideM)"><g mask="url(#floorM)" stroke="{GOLD}" fill="none">']
     for k in range(-22, 23):
         fl.append(f'<line x1="600" y1="{HZ}" x2="{600 + k * 110}" y2="{H}" stroke-opacity=".5"/>')
     n = 14
     for k in range(n):
         fl.append(f'<line class="fl" x1="0" y1="{HZ}" x2="{W}" y2="{HZ}" stroke-opacity=".75" '
                   f'style="animation-delay:-{k * 5 / n:.2f}s"/>')
-    fl.append("</g>")
+    fl.append("</g></g>")
     body += fl
     body.append(f'<rect x="0" y="{HZ}" width="{W}" height="{H - HZ}" fill="url(#sun)" opacity=".5"/>')
     body.append(f'<line x1="0" y1="{HZ}" x2="{W}" y2="{HZ}" stroke="url(#goldH)" stroke-width="1.5" '
@@ -252,8 +256,8 @@ def hero():
 
     # name
     body.append(f'<g class="jolt">')
-    body.append(f'<g class="halo" filter="url(#glow)">{strokes(GOLD, sw * 1.3, cls=False)}</g>')
-    body.append(strokes("url(#gold)", sw))
+    body.append(f'<g opacity="{HALO}"><g class="halo" filter="url(#glow)">{strokes(GOLD, sw * 1.3, cls=False)}</g></g>')
+    body.append(strokes("url(#nameG)", sw))
     body.append(f'<g class="late">{strokes(BG, sw * .26, cls=False)}</g>')
     body.append(f'<g mask="url(#nameM)"><rect class="shine" x="0" y="{ny - 20}" width="260" height="{10 * s + 40}" '
                 f'fill="url(#shineG)" transform="skewX(-20)"/></g>')
@@ -303,7 +307,6 @@ def hero():
 
     # HUD chrome
     hud = 'opacity=".6" letter-spacing="2"'
-    body.append(corners(0, 0, W, H, n=30, inset=22))
     body.append(text(48, 52, "MZ9 // PROFILE.SYS", 11, GOLD, extra=hud))
     body.append(text(48, 70, "BUILD 2026.10 · REV 9", 11, GOLD, extra='opacity=".35" letter-spacing="2"'))
     body.append(f'<circle cx="{W - 140}" cy="48" r="4" fill="{CYAN}" style="animation:pulse 1.6s ease-in-out infinite"/>')
@@ -322,8 +325,6 @@ def hero():
     body.append(text(W - 48, H - 44, "SCROLL ▼", 11, GOLD, anchor="end",
                      extra='letter-spacing="3" style="animation:pulse 2s ease-in-out infinite"'))
 
-    body.append(f'<rect width="{W}" height="{H}" fill="url(#vig)"/>')
-    body.append(overlay(W, H))
     return svg(W, H, "\n".join(body), style, defs)
 
 
@@ -332,16 +333,16 @@ def hero():
 def about():
     W, H = 1200, 500
     style = SCAN_CSS
-    defs = SWEEP_DEF
+    defs = ""
     body = [section_label(36, 46, "01", "ABOUT", "关于我", W - 72)]
 
     # terminal window
     tx, ty, tw_, th = 36, 76, 680, 392
     body.append(f'<rect x="{tx}" y="{ty}" width="{tw_}" height="{th}" rx="12" fill="{INK}" stroke="{GOLD}" stroke-opacity=".25"/>')
     body.append(f'<path d="M{tx},{ty + 36}H{tx + tw_}" stroke="{GOLD}" stroke-opacity=".18"/>')
-    for k, c in enumerate([GOLD, "#8A6A2A", "#3A3426"]):
+    for k, c in enumerate([GOLD, GOLD_LO, TRACK]):
         body.append(f'<circle cx="{tx + 22 + k * 20}" cy="{ty + 18}" r="6" fill="{c}"/>')
-    body.append(text(tx + tw_ / 2, ty + 23, "michaelzhao9@hq: ~ — zsh", 12, "#7A7A7A", anchor="middle"))
+    body.append(text(tx + tw_ / 2, ty + 23, "michaelzhao9@hq: ~ — zsh", 12, MUTED, anchor="middle"))
 
     lines = [
         ("cmd", "whoami"),
@@ -372,7 +373,7 @@ def about():
         defs += (f'<clipPath id="lc{i}"><rect x="{x0 - 2:.1f}" y="{y - 18}" width="{w + 4:.1f}" height="26" '
                  f'style="animation:l{i} {cyc}s infinite;transform:translateX({-w - 4:.1f}px)"/></clipPath>')
         style += (f"@keyframes p{i}{{0%,{a:.2f}%{{opacity:0}}{a + .01:.2f}%,{end}%{{opacity:1}}{end + 4}%,100%{{opacity:0}}}}")
-        fill = "#EDEDED" if kind == "cmd" else ("#D9B65C" if i == len(lines) - 1 else "#9A9A9A")
+        fill = FG if kind == "cmd" else (TITLE if i == len(lines) - 1 else TEXT)
         row = ""
         if kind == "cmd":
             row += text(lx, y, "❯", fs, GOLD, weight=700)
@@ -431,7 +432,6 @@ def about():
                 + text(2, 4.5, name, 12, GOLD_HI, anchor="middle", fit=True) + "</g>")
     body.append(text(760, 448, "SPEED ×1.00", 10, GOLD, extra='opacity=".3" letter-spacing="2"'))
     body.append(text(1144, 448, "ORBIT STABLE", 10, CYAN, anchor="end", extra='opacity=".6" letter-spacing="2"'))
-    body.append(overlay(W, H))
     return svg(W, H, "\n".join(body), style, defs)
 
 
@@ -471,7 +471,7 @@ def projects():
     rows = math.ceil(len(PROJECTS) / 2)
     H = top + rows * ch + (rows - 1) * gap + 36
     style = SCAN_CSS + "@keyframes flow{from{stroke-dashoffset:1000}to{stroke-dashoffset:0}}"
-    defs = SWEEP_DEF
+    defs = ""
     body = [section_label(side, 46, "02", "PROJECTS", "项目舱", W - 2 * side)]
     for i, (en, zh, plat, public, desc, tags) in enumerate(PROJECTS):
         x = side + (i % 2) * (cw + gap)
@@ -490,13 +490,13 @@ def projects():
                  f'style="animation:pulse 2s ease-in-out infinite;animation-delay:-{i * .3:.1f}s"/>')
         g.append(text(x + 42, y + 34, f"PRJ-{i + 1:02d} · {'PUBLIC' if public else 'PRIVATE'}", 11, dot,
                       extra='opacity=".75" letter-spacing="2"'))
-        g.append(text(x + cw - 24, y + 34, plat, 11, "#8C8C8C", anchor="end", extra='letter-spacing="1"'))
+        g.append(text(x + cw - 24, y + 34, plat, 11, MUTED, anchor="end", extra='letter-spacing="1"'))
         ts = 26
         tl = len(en) * .62 * ts
         g.append(text(x + 28, y + 78, en, ts, TITLE, weight=700, fit=True, ls=tl))
-        g.append(text(x + 28 + tl + 14, y + 77, zh, 17, "#8C8C8C"))
+        g.append(text(x + 28 + tl + 14, y + 77, zh, 17, MUTED))
         for j, ln in enumerate(desc):
-            g.append(text(x + 28, y + 112 + j * 24, ln, 14.5, "#B9B9B9"))
+            g.append(text(x + 28, y + 112 + j * 24, ln, 14.5, TEXT))
         cx_ = x + 28
         for t_ in tags:
             w = tw(t_, 11) + 18
@@ -505,7 +505,6 @@ def projects():
             g.append(text(cx_ + w / 2, y + ch - 31, t_, 11, GOLD, anchor="middle", fit=True))
             cx_ += w + 8
         body.append("<g>" + "".join(g) + "</g>")
-    body.append(overlay(W, H))
     return svg(W, H, "\n".join(body), style, defs)
 
 
@@ -518,8 +517,9 @@ def footer():
 .pt{animation:rise 6s linear infinite}
 @keyframes wipe{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
 """
-    defs = SWEEP_DEF + f"""<radialGradient id="fsun" cx="600" cy="240" r="420" gradientUnits="userSpaceOnUse">
-<stop offset="0" stop-color="{GOLD}" stop-opacity=".25"/><stop offset="1" stop-color="{GOLD}" stop-opacity="0"/></radialGradient>"""
+    defs = f"""<radialGradient id="fsun" cx="600" cy="120" r="420" gradientUnits="userSpaceOnUse"
+  gradientTransform="translate(600 120) scale(1 .26) translate(-600 -120)">
+<stop offset="0" stop-color="{GOLD}" stop-opacity="{SUN}"/><stop offset="1" stop-color="{GOLD}" stop-opacity="0"/></radialGradient>"""
     body = [f'<rect width="{W}" height="{H}" fill="url(#fsun)"/>']
     for _ in range(60):
         x = rnd.gauss(600, 260)
@@ -529,18 +529,19 @@ def footer():
     body.append(f'<rect x="596" y="54" width="8" height="8" fill="{GOLD}" transform="rotate(45 600 58)"/>')
     body.append(text(600, 118, "THINK SLOW · SHIP FAST", 30, TITLE, anchor="middle", weight=700, fit=True,
                      ls=22 * 30 * .62))
-    body.append(text(600, 152, "想 得 慢 ，做 得 快", 15, "#9A9A9A", anchor="middle", extra='letter-spacing="4"'))
+    body.append(text(600, 152, "想 得 慢 ，做 得 快", 15, TEXT, anchor="middle", extra='letter-spacing="4"'))
     body.append(text(600, 206, "MICHAELZHAO9  ·  2026  ·  END OF TRANSMISSION", 11, GOLD, anchor="middle",
                      extra='opacity=".45" letter-spacing="3"'))
     body.append(f'<rect class="blink" x="{600 + tw("MICHAELZHAO9  ·  2026  ·  END OF TRANSMISSION", 11) / 2 + 22:.0f}" y="197" '
                 f'width="7" height="12" fill="{GOLD}" opacity=".6"/>')
-    body.append(corners(0, 0, W, H, n=22, inset=20, op=".4"))
-    body.append(overlay(W, H))
     return svg(W, H, "\n".join(body), style, defs)
 
 
 if __name__ == "__main__":
     OUT.mkdir(exist_ok=True)
-    for name, fn in [("hero", hero), ("about", about), ("projects", projects), ("footer", footer)]:
-        (OUT / f"{name}.svg").write_text(fn(), encoding="utf-8")
-        print("wrote", name)
+    for theme in THEMES:
+        use(theme)
+        for name, fn in [("hero", hero), ("about", about), ("projects", projects), ("footer", footer)]:
+            rnd.seed(9)  # same stars/particles in both themes
+            (OUT / f"{name}-{theme}.svg").write_text(fn(), encoding="utf-8")
+            print("wrote", name, theme)

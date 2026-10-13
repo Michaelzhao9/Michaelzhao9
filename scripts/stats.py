@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Render the telemetry panel (dashboard.svg) from the GitHub REST API.
 
-    PROFILE_PAT=<token> python3 scripts/stats.py out/dashboard.svg
+    PROFILE_PAT=<token> python3 scripts/stats.py out/   # writes dashboard-{dark,light}.svg
 
 Needs a token that can read the owner's private repos (classic PAT with `repo`).
 Commits are counted per repo, so they show up whatever email they were authored with.
-Without PROFILE_PAT it exits 0 and leaves the existing file alone, so the
+Without PROFILE_PAT it exits 0 and leaves the existing files alone, so the
 public-only GITHUB_TOKEN never overwrites richer numbers with smaller ones.
 Only aggregate numbers are rendered; no private repo name ever appears.
 """
@@ -19,7 +19,8 @@ from datetime import date, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from build import (BG, CYAN, GOLD, GOLD_HI, TITLE, INK, SCAN_CSS, SWEEP_DEF, corners, overlay,  # noqa: E402
+import build  # noqa: E402
+from build import (SCAN_CSS, THEMES, corners,  # noqa: E402
                    section_label, svg, text, tw)
 
 LOGIN = os.environ.get("PROFILE_LOGIN", "Michaelzhao9")
@@ -31,13 +32,13 @@ HIDE_LANGS = {"HTML", "CSS"}
 
 def api(path, token):
     """GET a REST endpoint. GitHub answers 202 while it computes repo stats, so retry."""
-    for _ in range(8):
+    for _ in range(6):
         req = urllib.request.Request(f"https://api.github.com{path}", headers={
             "Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json", "User-Agent": LOGIN})
         with urllib.request.urlopen(req, timeout=30) as r:
             if r.status != 202:
                 return json.load(r)
-        time.sleep(4)
+        time.sleep(5)
     return None
 
 
@@ -51,11 +52,22 @@ def fetch(token):
         lb = {k: v for k, v in (api(f"/repos/{full}/languages", token) or {}).items() if k not in HIDE_LANGS}
         for k, v in lb.items():
             langs[k] = langs.get(k, 0) + v / sum(lb.values())
-        for w in api(f"/repos/{full}/stats/commit_activity", token) or []:
-            start = date.fromtimestamp(w["week"])
-            for i, n in enumerate(w["days"]):
-                d = start + timedelta(days=i)
-                daily[d] = daily.get(d, 0) + n
+        activity = api(f"/repos/{full}/stats/commit_activity", token)
+        if activity is not None:
+            for w in activity:
+                start = date.fromtimestamp(w["week"])
+                for i, n in enumerate(w["days"]):
+                    d = start + timedelta(days=i)
+                    daily[d] = daily.get(d, 0) + n
+            continue
+        # GitHub can sit on "202 computing" for big repos; walk the commit list instead
+        since = (date.today() - timedelta(days=371)).isoformat()
+        page = 1
+        while batch := api(f"/repos/{full}/commits?since={since}T00:00:00Z&per_page=100&page={page}", token):
+            for c in batch:
+                d = date.fromisoformat(c["commit"]["author"]["date"][:10])
+                daily[d] = daily.get(d, 0) + 1
+            page += 1
     return {"repos": len(repos), "langs": langs, "daily": daily}
 
 
@@ -97,7 +109,6 @@ def selftest():
     print("selftest ok")
 
 
-RAMP = [GOLD_HI, GOLD, "#C79A3A", "#9A7428", "#6B5020", "#3A3428"]
 
 
 def render(s, stamp):
@@ -109,10 +120,10 @@ def render(s, stamp):
 .kpi{animation:rise .8s cubic-bezier(.2,.8,.2,1) both}
 @keyframes arc{from{stroke-dashoffset:var(--l)}to{stroke-dashoffset:0}}
 .arc{animation:arc 1.4s cubic-bezier(.6,0,.2,1) both}
-@keyframes scanx{from{transform:translateX(0)}to{transform:translateX(392px)}}
+@keyframes scanx{from{transform:translateX(0)}to{transform:translateX(432px)}}
 .scanx{animation:scanx 4s linear infinite}
 """
-    defs = SWEEP_DEF + f"""<linearGradient id="barG" x1="0" y1="0" x2="0" y2="1">
+    defs = f"""<linearGradient id="barG" x1="0" y1="0" x2="0" y2="1">
 <stop offset="0" stop-color="{GOLD_HI}"/><stop offset="1" stop-color="{GOLD}" stop-opacity=".25"/></linearGradient>
 <linearGradient id="scanG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="{CYAN}" stop-opacity="0"/>
 <stop offset="1" stop-color="{CYAN}" stop-opacity=".35"/></linearGradient>"""
@@ -130,7 +141,7 @@ def render(s, stamp):
                     + corners(x + 8, y + 8, 176, 132, n=10, op=".5")
                     + text(x + 22, y + 38, label, 11, GOLD, extra='opacity=".6" letter-spacing="2"')
                     + text(x + 22, y + 96, val, 44, TITLE, weight=700, fit=True, ls=len(val) * .62 * 44)
-                    + text(x + 22, y + 124, sub, 10, "#7A7A7A", extra='letter-spacing="2"')
+                    + text(x + 22, y + 124, sub, 10, MUTED, extra='letter-spacing="2"')
                     + "</g>")
 
     # weekly activity
@@ -151,9 +162,11 @@ def render(s, stamp):
         body.append(f'<rect class="bar" x="{gx + k * bw + 1:.1f}" y="{gy + gh - h:.1f}" width="{bw - 2:.1f}" height="{h:.1f}" '
                     f'fill="url(#barG)" style="animation-delay:{.3 + k * .018:.3f}s"/>')
     body.append(f'<line x1="{gx}" y1="{gy + gh}" x2="{gx + gw}" y2="{gy + gh}" stroke="{GOLD}" stroke-opacity=".5"/>')
-    body.append(f'<rect class="scanx" x="{gx - 40}" y="{gy}" width="40" height="{gh}" fill="url(#scanG)"/>')
-    body.append(text(gx, gy + gh + 22, "52W AGO", 10, "#6A6A6A", extra='letter-spacing="2"'))
-    body.append(text(gx + gw, gy + gh + 22, "NOW", 10, "#6A6A6A", anchor="end", extra='letter-spacing="2"'))
+    defs += f'<clipPath id="chart"><rect x="{gx}" y="{gy}" width="{gw}" height="{gh}"/></clipPath>'
+    body.append(f'<g clip-path="url(#chart)"><rect class="scanx" x="{gx - 40}" y="{gy}" width="40" height="{gh}" '
+                f'fill="url(#scanG)"/></g>')
+    body.append(text(gx, gy + gh + 22, "52W AGO", 10, MUTED, extra='letter-spacing="2"'))
+    body.append(text(gx + gw, gy + gh + 22, "NOW", 10, MUTED, anchor="end", extra='letter-spacing="2"'))
 
     # language ring
     lx, ly, lw = 908, 76, 256
@@ -162,7 +175,7 @@ def render(s, stamp):
     cx, cy, r = lx + 74, ly + 128, 46
     circ = 2 * math.pi * r
     acc = 0.0
-    body.append(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="#1C1C20" stroke-width="14"/>')
+    body.append(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="{TRACK}" stroke-width="14"/>')
     for k, (name, share) in enumerate(s["langs"]):
         seg = max(share * circ - 2, .5)
         body.append(f'<circle class="arc" cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="{RAMP[k]}" stroke-width="14" '
@@ -175,28 +188,29 @@ def render(s, stamp):
         y = ly + 206 + k * 16 if k < 3 else ly + 206 + (k - 3) * 16
         x = lx + 22 if k < 3 else lx + 136
         body.append(f'<rect x="{x}" y="{y - 8}" width="8" height="8" fill="{RAMP[k]}"/>')
-        body.append(text(x + 14, y, name[:11], 11, "#B9B9B9"))
+        body.append(text(x + 14, y, name[:11], 11, TEXT))
         body.append(text(x + 106, y, f"{share * 100:.0f}%", 11, GOLD, anchor="end"))
-    body.append(text(lx + 150, ly + 112, "PRIMARY", 10, "#6A6A6A", extra='letter-spacing="2"'))
+    body.append(text(lx + 150, ly + 112, "PRIMARY", 10, MUTED, extra='letter-spacing="2"'))
     body.append(text(lx + 150, ly + 132, top[0][:10], 15, GOLD_HI, weight=700))
-    body.append(text(lx + 150, ly + 150, "BY PROJECT", 10, "#6A6A6A", extra='letter-spacing="1"'))
+    body.append(text(lx + 150, ly + 150, "BY PROJECT", 10, MUTED, extra='letter-spacing="1"'))
 
     body.append(text(W - 36, H - 16, f"SYNCED {stamp} UTC · AUTO-UPDATED DAILY", 10, GOLD, anchor="end",
                      extra='opacity=".35" letter-spacing="2"'))
-    body.append(overlay(W, H))
     return svg(W, H, "\n".join(body), style, defs)
 
 
 if __name__ == "__main__":
-    out = Path(sys.argv[1] if len(sys.argv) > 1 else "dashboard.svg")
+    out = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
     token = os.environ.get("PROFILE_PAT")
     if sys.argv[1:] == ["--selftest"]:
         selftest()
         sys.exit(0)
     if not token:
-        print("PROFILE_PAT not set; keeping existing dashboard.svg")
+        print("PROFILE_PAT not set; keeping existing dashboards")
         sys.exit(0)
     s = summarize(fetch(token), date.today())
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(render(s, date.today().isoformat()), encoding="utf-8")
+    out.mkdir(parents=True, exist_ok=True)
+    for theme in THEMES:
+        build.use(theme, globals())
+        (out / f"dashboard-{theme}.svg").write_text(render(s, date.today().isoformat()), encoding="utf-8")
     print("wrote", out, {k: v for k, v in s.items() if k != "weeks"})
