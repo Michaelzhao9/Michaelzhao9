@@ -93,7 +93,7 @@
 <circle class="pt" cx="776" cy="205" r="0.7" fill="#FFF1C1" style="animation-delay:-2.18s;animation-duration:5.9s"/>
 <line x1="120" y1="58" x2="1080" y2="58" stroke="url(#goldH)" stroke-opacity=".6"/>
 <rect x="596" y="54" width="8" height="8" fill="#E8C766" transform="rotate(45 600 58)"/>
-<text x="600.0" y="118.0" font-size="30" fill="url(#gold)" text-anchor="middle" font-weight="700" textLength="409.2" lengthAdjust="spacingAndGlyphs" >THINK SLOW · SHIP FAST</text>
+<text x="600.0" y="118.0" font-size="30" fill="#F2D27A" text-anchor="middle" font-weight="700" textLength="409.2" lengthAdjust="spacingAndGlyphs" >THINK SLOW · SHIP FAST</text>
 <text x="600.0" y="152.0" font-size="15" fill="#9A9A9A" text-anchor="middle" letter-spacing="4">想 得 慢 ，做 得 快</text>
 <text x="600.0" y="206.0" font-size="11" fill="#E8C766" text-anchor="middle" opacity=".45" letter-spacing="3">MICHAELZHAO9  ·  2026  ·  END OF TRANSMISSION</text>
 <rect class="blink" x="770" y="197" width="7" height="12" fill="#E8C766" opacity=".6"/>

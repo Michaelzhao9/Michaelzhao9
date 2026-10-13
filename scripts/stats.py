@@ -19,7 +19,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from build import (BG, CYAN, GOLD, GOLD_HI, INK, SCAN_CSS, SWEEP_DEF, corners, overlay,  # noqa: E402
+from build import (BG, CYAN, GOLD, GOLD_HI, TITLE, INK, SCAN_CSS, SWEEP_DEF, corners, overlay,  # noqa: E402
                    section_label, svg, text, tw)
 
 LOGIN = os.environ.get("PROFILE_LOGIN", "Michaelzhao9")
@@ -129,7 +129,7 @@ def render(s, stamp):
                     f'<rect x="{x}" y="{y}" width="192" height="148" rx="10" fill="{INK}" stroke="{GOLD}" stroke-opacity=".22"/>'
                     + corners(x + 8, y + 8, 176, 132, n=10, op=".5")
                     + text(x + 22, y + 38, label, 11, GOLD, extra='opacity=".6" letter-spacing="2"')
-                    + text(x + 22, y + 96, val, 44, "url(#gold)", weight=700, fit=True, ls=len(val) * .62 * 44)
+                    + text(x + 22, y + 96, val, 44, TITLE, weight=700, fit=True, ls=len(val) * .62 * 44)
                     + text(x + 22, y + 124, sub, 10, "#7A7A7A", extra='letter-spacing="2"')
                     + "</g>")
 

@@ -26,7 +26,7 @@
 <stop offset="0" stop-color="#E8C766" stop-opacity=".35"/><stop offset="1" stop-color="#E8C766" stop-opacity="0"/></radialGradient><clipPath id="frame"><rect width="1200" height="500" rx="18"/></clipPath></defs>
 <g clip-path="url(#frame)">
 <rect width="1200" height="500" fill="#060608"/>
-<rect x="36" y="35" width="6" height="14" fill="#E8C766"/><text x="52.0" y="46.0" font-size="13" fill="#E8C766" text-anchor="start" opacity=".55" letter-spacing="2">// 01</text><text x="116.0" y="46.0" font-size="15" fill="url(#goldH)" text-anchor="start" font-weight="700" textLength="45.0" lengthAdjust="spacingAndGlyphs" >ABOUT</text><text x="173.0" y="46.0" font-size="14" fill="#8A8A8A" text-anchor="start" >关于我</text><line x1="231.0" y1="41" x2="1164" y2="41" stroke="#E8C766" stroke-opacity=".22"/><rect x="1124" y="39" width="40" height="3" fill="#E8C766" opacity=".6"/>
+<rect x="36" y="35" width="6" height="14" fill="#E8C766"/><text x="52.0" y="46.0" font-size="13" fill="#E8C766" text-anchor="start" opacity=".55" letter-spacing="2">// 01</text><text x="116.0" y="46.0" font-size="15" fill="#E8C766" text-anchor="start" font-weight="700" textLength="45.0" lengthAdjust="spacingAndGlyphs" >ABOUT</text><text x="173.0" y="46.0" font-size="14" fill="#8A8A8A" text-anchor="start" >关于我</text><line x1="231.0" y1="41" x2="1164" y2="41" stroke="#E8C766" stroke-opacity=".22"/><rect x="1124" y="39" width="40" height="3" fill="#E8C766" opacity=".6"/>
 <rect x="36" y="76" width="680" height="392" rx="12" fill="#0C0C10" stroke="#E8C766" stroke-opacity=".25"/>
 <path d="M36,112H716" stroke="#E8C766" stroke-opacity=".18"/>
 <circle cx="58" cy="94" r="6" fill="#E8C766"/>

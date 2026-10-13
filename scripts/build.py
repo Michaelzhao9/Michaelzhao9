@@ -17,6 +17,7 @@ GOLD = "#E8C766"
 GOLD_HI = "#FFF1C1"
 GOLD_LO = "#9A7428"
 CYAN = "#3DF5FF"
+TITLE = "#F2D27A"  # solid: WebKit renders gradient fills on textLength-stretched text jagged
 MONO = "'SF Mono','JetBrains Mono',Menlo,Consolas,'Liberation Mono','DejaVu Sans Mono'"
 CJK = "'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC',sans-serif"
 FONT = f"{MONO},{CJK}"
@@ -101,7 +102,7 @@ def section_label(x, y, num, en, zh, w):
     return (
         f'<rect x="{x}" y="{y - 11}" width="6" height="14" fill="{GOLD}"/>'
         + text(x + 16, y, f"// {num}", 13, GOLD, extra='opacity=".55" letter-spacing="2"')
-        + text(x + 80, y, en, 15, "url(#goldH)", weight=700, fit=True)
+        + text(x + 80, y, en, 15, GOLD, weight=700, fit=True)
         + text(x + 92 + tw(en, 15), y, zh, 14, "#8A8A8A")
         + f'<line x1="{x + 108 + tw(en, 15) + tw(zh, 14)}" y1="{y - 5}" x2="{x + w}" y2="{y - 5}" '
           f'stroke="{GOLD}" stroke-opacity=".22"/>'
@@ -492,7 +493,7 @@ def projects():
         g.append(text(x + cw - 24, y + 34, plat, 11, "#8C8C8C", anchor="end", extra='letter-spacing="1"'))
         ts = 26
         tl = len(en) * .62 * ts
-        g.append(text(x + 28, y + 78, en, ts, "url(#gold)", weight=700, fit=True, ls=tl))
+        g.append(text(x + 28, y + 78, en, ts, TITLE, weight=700, fit=True, ls=tl))
         g.append(text(x + 28 + tl + 14, y + 77, zh, 17, "#8C8C8C"))
         for j, ln in enumerate(desc):
             g.append(text(x + 28, y + 112 + j * 24, ln, 14.5, "#B9B9B9"))
@@ -526,7 +527,7 @@ def footer():
                     f'fill="{GOLD_HI}" style="animation-delay:-{rnd.uniform(0, 6):.2f}s;animation-duration:{rnd.uniform(4, 8):.1f}s"/>')
     body.append(f'<line x1="120" y1="58" x2="1080" y2="58" stroke="url(#goldH)" stroke-opacity=".6"/>')
     body.append(f'<rect x="596" y="54" width="8" height="8" fill="{GOLD}" transform="rotate(45 600 58)"/>')
-    body.append(text(600, 118, "THINK SLOW · SHIP FAST", 30, "url(#gold)", anchor="middle", weight=700, fit=True,
+    body.append(text(600, 118, "THINK SLOW · SHIP FAST", 30, TITLE, anchor="middle", weight=700, fit=True,
                      ls=22 * 30 * .62))
     body.append(text(600, 152, "想 得 慢 ，做 得 快", 15, "#9A9A9A", anchor="middle", extra='letter-spacing="4"'))
     body.append(text(600, 206, "MICHAELZHAO9  ·  2026  ·  END OF TRANSMISSION", 11, GOLD, anchor="middle",
